@@ -1,0 +1,10 @@
+juyv-2jek.machine_manufacturer JOIN juyv-2jek.counter_weight_buffer
+juyv-2jek.number_of_stops JOIN eccv-9dzr.:@computed_region_sbqj_enih
+juyv-2jek.number_of_stops JOIN w2pb-icbu.residential_units
+juyv-2jek.number_of_stops JOIN 2010_Gen_Ed_Survey_Data.p_q7a_3
+juyv-2jek.number_of_stops JOIN f33j-ecpr.q15_c4_r2
+juyv-2jek.number_of_stops JOIN wycc-5aqt.community_district
+juyv-2jek.number_of_stops JOIN u4hi-kt3x.p_q4e_5
+juyv-2jek.number_of_stops JOIN u4hi-kt3x.p_q5b
+juyv-2jek.number_of_stops JOIN 6rg9-pfbz.community_council
+juyv-2jek.number_of_stops JOIN njjd-3gve.q15_c3_r1
