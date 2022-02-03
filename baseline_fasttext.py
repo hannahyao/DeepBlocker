@@ -9,7 +9,8 @@ model = fasttext.load_model("embedding/wiki.en/wiki.en.bin")
 
 #Return sentence embeddings for a list of words
 def get_word_embedding(list_of_words):
-    return [model.get_sentence_vector(word) for word in list_of_words]
+
+    return [model.get_sentence_vector(word.replace("\n"," ")) for word in list_of_words]
 
 def cos_sim(column1, column2):
     column1 = column1.dropna().sort_values()
@@ -39,7 +40,8 @@ def make_prediction_df(table_names, table_files):
     dfb = pd.read_csv(table_files[1])
     dfa = dfa.astype(str)
     dfb = dfb.astype(str)
-    
+    if len(dfb) > 5000:
+    	return None
     print(len(dfa))
     print(len(dfb))
     cs_list,column_compare_combos = generate_column_similarity(dfa,dfb)
@@ -50,7 +52,7 @@ def make_prediction_df(table_names, table_files):
     test['rtable_id'] = table2_name + '.' + test['rtable_id']
     return test
 
-def compute_blocking_statistics(candidate_set_df, golden_df,left_df, right_df):
+def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df, right_df):
     #Now we have two data frames with two columns ltable_id and rtable_id
     # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
 
@@ -62,6 +64,8 @@ def compute_blocking_statistics(candidate_set_df, golden_df,left_df, right_df):
     left_num_tuples = len(left_df)
     right_num_tuples = len(right_df)
     statistics_dict = {
+    	"left_table": table_names[0],
+    	"right_table": table_names[1],
         "left_num_tuples": left_num_tuples,
         "right_num_tuples": right_num_tuples,
         "candidate_set_length": len(candidate_set_df),
@@ -80,18 +84,10 @@ def main():
 	args = sys.argv[1:]
 
 	# table_names = ('kvhd-5fmu','2j8u-wtju')
-	table_names = (args[0],args[1])
-	table_file1 = 'nyc_cleaned/' + table_names[0] + '.csv'
-	table_file2 = 'nyc_cleaned/' + table_names[1] + '.csv'
-
 	# table_files = ('nyc_cleaned/kvhd-5fmu.csv','nyc_cleaned/2j8u-wtju.csv')
-	table_files = (table_file1,table_file2)
+
 
 	output_file = 'nyc_output/'+ args[0] + '-output.txt'
-
-	print("Getting cosine_similarity")
-	test = make_prediction_df(table_names, table_files)
-
 	with open(output_file) as f:
 	    lines = f.readlines()
 	line_df = pd.DataFrame(lines,columns=['full'])
@@ -99,14 +95,34 @@ def main():
 	line_df = line_df.replace('\n',' ', regex=True)
 	line_df.columns = ['ltable_id','rtable_id']
 
-	print("Compute stats")
-	candidate_set_df = test[test['score']> 0.95]
-	golden_df = line_df[line_df['ltable_id'].str.contains(table_names[0])]
-	golden_df = line_df[line_df['rtable_id'].str.contains(table_names[1])]
-	golden_df.ltable_id = golden_df.ltable_id.str.strip()
-	golden_df.rtable_id = golden_df.rtable_id.str.strip()
-	candidate_set_df['ltable_id'] = candidate_set_df['ltable_id'].astype('str')
-	golden_df['ltable_id'] = golden_df['ltable_id'].astype('str')
-	stats = compute_blocking_statistics(candidate_set_df, golden_df,test['ltable_id'].unique(), test['rtable_id'].unique())
-	print(stats)
+	if len(args )== 2:
+		joining_tables = [args[1]]
+	else:
+		joining_tables = line_df['rtable_id'].str.split('.').apply(lambda x: x[0].strip()).unique()
+
+	table_file1 = 'nyc_cleaned/' + args[0] + '.csv'
+	stats_list = []
+	for table in joining_tables:
+		print(table)
+		table_file2 = 'nyc_cleaned/' + table + '.csv'
+		table_names = (args[0],table)
+		table_files = (table_file1,table_file2)
+
+		print("Getting cosine_similarity")
+		test = make_prediction_df(table_names, table_files)
+		if test is None:
+			continue
+		print("Compute stats")
+		candidate_set_df = test[test['score']> 0.95] #change to top 10? 
+		golden_df = line_df[line_df['ltable_id'].str.contains(table_names[0])]
+		golden_df = line_df[line_df['rtable_id'].str.contains(table_names[1])]
+		golden_df.ltable_id = golden_df.ltable_id.str.strip()
+		golden_df.rtable_id = golden_df.rtable_id.str.strip()
+		candidate_set_df['ltable_id'] = candidate_set_df['ltable_id'].astype('str')
+		golden_df['ltable_id'] = golden_df['ltable_id'].astype('str')
+		stats = compute_blocking_statistics(table_names,candidate_set_df, golden_df,test['ltable_id'].unique(), test['rtable_id'].unique())
+		print(stats)
+		stats_list.append(stats)
+
+	print(stats_list)
 main()
