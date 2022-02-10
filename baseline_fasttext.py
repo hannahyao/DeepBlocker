@@ -60,6 +60,10 @@ def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df,
     
     # Added to calculate total false positives
     false_pos = candidate_set_df[~candidate_set_df['ltable_id'].isin(merged_df['ltable_id'])&(~candidate_set_df['rtable_id'].isin(merged_df['rtable_id']))]
+    if len(golden_df) > 0 and (len(merged_df) + len(false_pos)) > 0:
+    	fp = float(len(merged_df)) / (len(merged_df) + len(false_pos))
+    else:
+    	fp = "N/A"
 
     left_num_tuples = len(left_df)
     right_num_tuples = len(right_df)
@@ -72,7 +76,7 @@ def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df,
         "golden_set_length": len(golden_df),
         "merged_set_length": len(merged_df),
         "false_positives_length": len(false_pos),
-        "precision": float(len(merged_df)) / (len(merged_df) + len(false_pos)) if len(golden_df) > 0 else "N/A",
+        "precision": fp,
         "recall": float(len(merged_df)) / len(golden_df) if len(golden_df) > 0 else "N/A",
         "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples)
         }
