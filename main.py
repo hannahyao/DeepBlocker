@@ -11,17 +11,19 @@ import blocking_utils
 
 def do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model):
     folder_root = Path(folder_root)
-    left_df = pd.read_csv(folder_root / left_table_fname)
-    right_df = pd.read_csv(folder_root / right_table_fname)
+    left_table_name_csv = left_table_fname+'.csv'
+    right_table_name_csv = right_table_fname+'.csv'
+    left_df = pd.read_csv(folder_root / left_table_name_csv)
+    right_df = pd.read_csv(folder_root / right_table_name_csv)
 
     db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
     candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block)
 
     # golden_df = pd.read_csv(Path(folder_root) /  "matches.csv")
 
-    golden_df = get_golden_set(left_table_fname)
+    golden_df = get_golden_set(left_table_fname,right_table_fname)
 
-    statistics_dict = blocking_utils.compute_blocking_statistics(candidate_set_df, golden_df, left_df, right_df)
+    statistics_dict = blocking_utils.compute_blocking_statistics((left_table_fname,right_table_fname), candidate_set_df, golden_df, left_df, right_df)
     return statistics_dict
 
 def get_golden_set(left_table_fname, right_table_fname,):
@@ -48,7 +50,7 @@ if __name__ == "__main__":
     # cols_to_block = ["title", "manufacturer", "price"]
 
     folder_root = "nyc_cleaned"
-    left_table_fname, right_table_fname = "myrx-addi", "8vqd-3345"
+    left_table_fname, right_table_fname = "myrx-addi","8vqd-3345"
     cols_to_block = ["title", "manufacturer", "price"]
     # print("using AutoEncoder embedding")
     # tuple_embedding_model = AutoEncoderTupleEmbedding()
@@ -62,8 +64,8 @@ if __name__ == "__main__":
     statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
     print(statistics_dict)
 
-    print("using Hybrid embedding")
-    tuple_embedding_model = CTTTupleEmbedding()
-    topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
-    statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
-    print(statistics_dict)
+    # print("using Hybrid embedding")
+    # tuple_embedding_model = CTTTupleEmbedding()
+    # topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
+    # statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
+    # print(statistics_dict)
