@@ -63,12 +63,13 @@ class DeepBlocker:
             right_df_tuple = [self.right_df.sample(k)[cols].T for x in range(0,n)]
             right_df_tuple_list = [','.join(i) for i in right_df_tuple]
             right_list.extend(right_df_tuple_list)
-    #     left_df = pd.DataFrame(left_list,columns=left_df.columns)
+
         self.left_df = pd.DataFrame(left_list,columns=['_merged_text'])
         self.left_df['id'] = np.arange(len(self.left_df))
         self.right_df = pd.DataFrame(right_list,columns=['_merged_text'])
         self.right_df['id'] = np.arange(len(self.right_df))
-        return self.left_df,self.right_df
+        
+        # return self.left_df,self.right_df
 
     def block_datasets(self, left_df, right_df, cols_to_block):
         self.left_df = left_df
@@ -79,7 +80,7 @@ class DeepBlocker:
         # self.preprocess_datasets()
 
         self.preprocess_columns()
-        
+
         print("Performing pre-processing for tuple embeddings ")
         all_merged_text = pd.concat([self.left_df["_merged_text"], self.right_df["_merged_text"]], ignore_index=True)
         self.tuple_embedding_model.preprocess(all_merged_text)

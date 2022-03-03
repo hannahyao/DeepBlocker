@@ -184,7 +184,7 @@ class AutoEncoderTupleEmbedding(ABCTupleEmbedding):
 # for each tuple t in list_of_tuples, 
 # we generate synth_tuples_per_tuple positive tuple pairs
 # and synth_tuples_per_tuple * pos_to_neg_ratio negative tuple pairs
-def generate_synthetic_training_data(list_of_tuples, synth_tuples_per_tuple=5, 
+def generate_synthetic_training_data(list_of_tuples, synth_tuples_per_tuple, 
         pos_to_neg_ratio=1, max_perturbation=0.4):
     num_positives_per_tuple = synth_tuples_per_tuple
     num_negatives_per_tuple = synth_tuples_per_tuple * pos_to_neg_ratio
@@ -235,7 +235,7 @@ def generate_synthetic_training_data(list_of_tuples, synth_tuples_per_tuple=5,
 
 class CTTTupleEmbedding(ABCTupleEmbedding):
     def __init__(self, hidden_dimensions=(2*AE_EMB_DIMENSION_SIZE, AE_EMB_DIMENSION_SIZE),
-            synth_tuples_per_tuple=5, pos_to_neg_ratio=1, max_perturbation=0.4):
+            synth_tuples_per_tuple=10, pos_to_neg_ratio=1, max_perturbation=0.4):
         super().__init__()
         self.input_dimension = EMB_DIMENSION_SIZE
         self.hidden_dimensions = hidden_dimensions
