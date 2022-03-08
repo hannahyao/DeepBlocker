@@ -1,6 +1,6 @@
 import pandas as pd
 
-def topK_neighbors_to_candidate_set(topK_neighbors):
+def topK_neighbors_to_candidate_set(topK_neighbors,topK_values):
     #We create a data frame corresponding to topK neighbors.
     # We are given a 2D matrix of the form 1: [a1, a2, a3], 2: [b1, b2, b3]
     # where a1, a2, a3 are the top-3 neighbors for tuple 1 and so on.
@@ -9,7 +9,8 @@ def topK_neighbors_to_candidate_set(topK_neighbors):
     topK_df["ltable_id"] = topK_df.index
     melted_df = pd.melt(topK_df, id_vars=["ltable_id"])
     melted_df["rtable_id"] = melted_df["value"]
-    candidate_set_df = melted_df[["ltable_id", "rtable_id"]]
+    melted_df["value"] = topK_values
+    candidate_set_df = melted_df[["ltable_id", "rtable_id","value"]]
     return candidate_set_df
 
 
@@ -32,11 +33,14 @@ def topK_neighbors_to_candidate_set(topK_neighbors):
 
 #     return statistics_dict
 
-def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df, right_df):
+def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df, right_df,threshold=None):
     #Now we have two data frames with two columns ltable_id and rtable_id
     # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
-    candidate_set_df = candidate_set_df.astype('str')
+    
+    if threshold:
+        candidate_set_df = candidate_set_df[candidate_set_df.value > threshold]
 
+    candidate_set_df = candidate_set_df.astype('str')
     candidate_set_df['ltable_id_table'] = candidate_set_df['ltable_id'].apply(lambda x: left_df.columns[int(x)])
     candidate_set_df['ltable_id_table'] = table_names[0] + '.' + candidate_set_df['ltable_id_table']
     candidate_set_df['rtable_id_table'] = candidate_set_df['rtable_id'].apply(lambda x: right_df.columns[int(x)])
@@ -44,7 +48,7 @@ def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df,
 
     candidate_set_df = candidate_set_df[['ltable_id_table','rtable_id_table']].rename(columns={'ltable_id_table':'ltable_id','rtable_id_table':'rtable_id'})
     print(candidate_set_df)
-
+    candidate_set_df.to_csv('candidate_set_df.csv')
     merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
     
     # Added to calculate total false positives

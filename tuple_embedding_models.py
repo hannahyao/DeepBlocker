@@ -1,6 +1,7 @@
 #GiG
 
 from collections import Counter
+import itertools
 import random 
 
 import numpy as np
@@ -12,6 +13,8 @@ from torchtext.data import get_tokenizer
 
 import dl_models
 from configurations import *
+
+from scipy.spatial import distance
 
 #This is the Abstract Base Class for all Tuple Embedding models
 class ABCTupleEmbedding:
@@ -270,9 +273,23 @@ class CTTTupleEmbedding(ABCTupleEmbedding):
     # each tuple embedding is 1D numpy ndarray
     def get_tuple_embedding(self, list_of_tuples):
         embedding_matrix = torch.tensor(self.sif_embedding_model.get_tuple_embedding(list_of_tuples)).float()
-        return embedding_matrix
-        
+        return self.ctt_model.get_tuple_embedding(embedding_matrix)
 
+    # def get_tuple_embedding(self, list_of_tuples):
+    #     embedding_matrix = torch.tensor(self.sif_embedding_model.get_tuple_embedding(list_of_tuples)).float()
+    #     return embedding_matrix       
+    # def run_model(self):
+    #     return lambda u, v: self.ctt_model(u,v)   
+
+    def get_prediction(self, t1,t2):
+        embedding_matrix_1 = torch.tensor(self.sif_embedding_model.get_tuple_embedding(t1['_merged_text'])).float()
+        embedding_matrix_2 = torch.tensor(self.sif_embedding_model.get_tuple_embedding(t2['_merged_text'])).float()
+        tuple_list = []
+        for i,j in itertools.product(range(0,len(embedding_matrix_1)), range(0,len(embedding_matrix_2))):
+            pred = self.ctt_model(embedding_matrix_1[i],embedding_matrix_2[j]).cpu().detach().numpy() 
+            tuple_list.append((i,j,pred[0]))
+        # cdist_matrix = distance.cdist(embedding_matrix_1, embedding_matrix_2, metric=self.run_model())
+        return tuple_list  
 
     #This function sends a list of words and outputs a list of word embeddings
     def get_word_embedding(self, list_of_words):

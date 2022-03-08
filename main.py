@@ -5,11 +5,12 @@ import pandas as pd
 from pathlib import Path
 
 from deep_blocker import DeepBlocker
-from tuple_embedding_models import  AutoEncoderTupleEmbedding, CTTTupleEmbedding, HybridTupleEmbedding
+from tuple_embedding_models import  AutoEncoderTupleEmbedding, CTTTupleEmbedding, HybridTupleEmbedding, SIFEmbedding
 from vector_pairing_models import ExactTopKVectorPairing
 import blocking_utils
+from configurations import * 
 
-def do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model):
+def ctt_train_score_with_pred(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model):
     folder_root = Path(folder_root)
     left_table_name_csv = left_table_fname+'.csv'
     right_table_name_csv = right_table_fname+'.csv'
@@ -17,13 +18,32 @@ def do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block,
     right_df = pd.read_csv(folder_root / right_table_name_csv)
 
     db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
-    candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block)
-
+    candidate_set_df,predictions = db.block_datasets(left_df, right_df, cols_to_block,True)
+    predictions = pd.DataFrame(predictions,columns=['ltable_id','rtable_id','value'])
+    # print(predictions)
+    # predictions = predictions[predictions.prediction > 0.1]
     # golden_df = pd.read_csv(Path(folder_root) /  "matches.csv")
 
     golden_df = get_golden_set(left_table_fname,right_table_fname)
+    statistics_dict_binary = blocking_utils.compute_blocking_statistics((left_table_fname,right_table_fname), predictions, golden_df, left_df, right_df,CTT_BINARY_THRESHOLD)
+    statistics_dict = blocking_utils.compute_blocking_statistics((left_table_fname,right_table_fname), candidate_set_df, golden_df, left_df, right_df,CTT_EMBEDDING_THRESHOLD)
+    
+    return statistics_dict,statistics_dict_binary
 
-    statistics_dict = blocking_utils.compute_blocking_statistics((left_table_fname,right_table_fname), candidate_set_df, golden_df, left_df, right_df)
+def do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model,threshold):
+    folder_root = Path(folder_root)
+    left_table_name_csv = left_table_fname+'.csv'
+    right_table_name_csv = right_table_fname+'.csv'
+    left_df = pd.read_csv(folder_root / left_table_name_csv)
+    right_df = pd.read_csv(folder_root / right_table_name_csv)
+
+    db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
+    candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block,False)
+    # golden_df = pd.read_csv(Path(folder_root) /  "matches.csv")
+
+    golden_df = get_golden_set(left_table_fname,right_table_fname)
+    statistics_dict = blocking_utils.compute_blocking_statistics((left_table_fname,right_table_fname), candidate_set_df, golden_df, left_df, right_df,threshold)
+ 
     return statistics_dict
 
 def get_golden_set(left_table_fname, right_table_fname,):
@@ -52,18 +72,32 @@ if __name__ == "__main__":
     folder_root = "nyc_cleaned"
     left_table_fname, right_table_fname = "myrx-addi","8vqd-3345"
     cols_to_block = ["title", "manufacturer", "price"]
+    output = []
     # print("using AutoEncoder embedding")
     # tuple_embedding_model = AutoEncoderTupleEmbedding()
     # topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
     # statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
     # print(statistics_dict)
 
+    print("using SIF embedding")
+    tuple_embedding_model = SIFEmbedding()
+    topK_vector_pairing_model = ExactTopKVectorPairing(K=1)
+    statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model,SIF_EMBEDDING_THRESHOLD)
+    statistics_dict['mode'] = 'SIF'
+    output.append(statistics_dict)
+    # print(statistics_dict)
+
     print("using CTT embedding")
     tuple_embedding_model = CTTTupleEmbedding(synth_tuples_per_tuple=100)
     topK_vector_pairing_model = ExactTopKVectorPairing(K=1)
-    statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
-    print(statistics_dict)
+    statistics_dict , statistics_dict_binary= ctt_train_score_with_pred(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
+    
+    statistics_dict['mode'] = 'CTT_embedding'
+    output.append(statistics_dict)
+    statistics_dict_binary['mode'] = 'CTT_classifier'
+    output.append(statistics_dict_binary)
 
+    print(output)
     # print("using Hybrid embedding")
     # tuple_embedding_model = CTTTupleEmbedding()
     # topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
