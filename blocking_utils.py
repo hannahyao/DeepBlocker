@@ -52,7 +52,9 @@ def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df,
     merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
     
     # Added to calculate total false positives
-    false_pos = candidate_set_df[~candidate_set_df['ltable_id'].isin(merged_df['ltable_id'])&(~candidate_set_df['rtable_id'].isin(merged_df['rtable_id']))]
+    false_pos = candidate_set_df[~candidate_set_df['ltable_id'].isin(merged_df['ltable_id'])|(~candidate_set_df['rtable_id'].isin(merged_df['rtable_id']))]
+    false_neg = golden_df[~golden_df['ltable_id'].isin(merged_df['ltable_id'])| (~golden_df['rtable_id'].isin(merged_df['rtable_id']))]
+   
     if len(golden_df) > 0 and (len(merged_df) + len(false_pos)) > 0:
     	fp = float(len(merged_df)) / (len(merged_df) + len(false_pos))
     else:
@@ -68,6 +70,7 @@ def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df,
         "candidate_set_length": len(candidate_set_df),
         "golden_set_length": len(golden_df),
         "merged_set_length": len(merged_df),
+        "false_negatives_length": len(false_neg),
         "false_positives_length": len(false_pos),
         "precision": fp,
         "recall": float(len(merged_df)) / len(golden_df) if len(golden_df) > 0 else "N/A",

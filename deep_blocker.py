@@ -54,7 +54,8 @@ class DeepBlocker:
         self.right_df.fillna(' ', inplace=True)
 
         n=1 # lenght of dataset
-        k = 10 #length of tuple
+        k =  min(len(self.left_df.index), len(self.right_df.index))
+        print(k)
         left_list = []
         for cols in self.left_df.columns:
             left_df_tuple = [self.left_df.sample(n=k,random_state=1)[cols].T for x in range(0,n)]
