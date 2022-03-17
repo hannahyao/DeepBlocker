@@ -66,7 +66,7 @@ def get_golden_set(left_table_fname, right_table_fname):
     return golden_df
 
 def get_golden_set_full():
-    output_file = 'nyc_output/'+ 'merged-output.txt'
+    output_file = 'nyc_output/'+ 'aurum_output.txt'
     with open(output_file) as f:
         lines = f.readlines()
     line_df = pd.DataFrame(lines,columns=['full'])
@@ -130,12 +130,12 @@ if __name__ == "__main__":
         statistics_dict_binary['mode'] = 'CTT_classifier'
         output.append(statistics_dict_binary)
 
-        print(output)
+        # print(output)
         # print("using Hybrid embedding")
         # tuple_embedding_model = CTTTupleEmbedding()
         # topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
         # statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
         # print(statistics_dict)
-    print(output)
-    with open('output_stats.pkl', 'wb') as f:
-        pickle.dump(output, f)
+    # print(output)
+        with open('output_stats.pkl', 'wb') as f:
+            pickle.dump(output, f)
