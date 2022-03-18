@@ -10,42 +10,6 @@ class DeepBlocker:
         self.tuple_embedding_model = tuple_embedding_model
         self.vector_pairing_model = vector_pairing_model
 
-    def validate_columns(self):
-        #Assumption: id column is named as id
-        if "id" not in self.cols_to_block:
-            self.cols_to_block.append("id")
-        self.cols_to_block_without_id = [col for col in self.cols_to_block if col != "id"]
-
-        #Check if all required columns are in left_df
-        check = all([col in self.left_df.columns for col in self.cols_to_block])
-        if not check:
-            raise Exception("Not all columns in cols_to_block are present in the left dataset")
-
-        #Check if all required columns are in right_df
-        check = all([col in self.right_df.columns for col in self.cols_to_block])
-        if not check:
-            raise Exception("Not all columns in cols_to_block are present in the right dataset")
-
-
-    def preprocess_datasets(self):
-        self.left_df = self.left_df[self.cols_to_block]
-        self.right_df = self.right_df[self.cols_to_block]
-
-        self.left_df.fillna(' ', inplace=True)
-        self.right_df.fillna(' ', inplace=True)
-
-        self.left_df = self.left_df.astype(str)
-        self.right_df = self.right_df.astype(str)
-
-
-        self.left_df["_merged_text"] = self.left_df[self.cols_to_block_without_id].agg(' '.join, axis=1)
-        self.right_df["_merged_text"] = self.right_df[self.cols_to_block_without_id].agg(' '.join, axis=1)
-
-        #Drop the other columns
-        self.left_df = self.left_df.drop(columns=self.cols_to_block_without_id)
-        self.right_df = self.right_df.drop(columns=self.cols_to_block_without_id)
-
-
     def preprocess_columns(self):
   
         self.left_df = self.left_df.astype('str')
@@ -74,13 +38,14 @@ class DeepBlocker:
         
         # return self.left_df,self.right_df
 
-    def block_datasets(self, left_df, right_df, cols_to_block,predict=False):
+    def driver(self, left_df, right_df, cols_to_block=None,predict=False):
+        """
+        Driver for preprocessing, training and scoring. 
+        Outputs table join prediction/candidate set
+        """
         self.left_df = left_df
         self.right_df = right_df
-        self.cols_to_block = cols_to_block
-
-        # self.validate_columns()
-        # self.preprocess_datasets()
+        # self.cols_to_block = cols_to_block
 
         self.preprocess_columns()
 

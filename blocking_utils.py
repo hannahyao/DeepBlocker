@@ -14,25 +14,6 @@ def topK_neighbors_to_candidate_set(topK_neighbors,topK_values):
     return candidate_set_df
 
 
-# #This accepts four inputs:
-# # data frames for candidate set and ground truth matches
-# # left and right data frames
-# def compute_blocking_statistics(candidate_set_df, golden_df, left_df, right_df):
-#     #Now we have two data frames with two columns ltable_id and rtable_id
-#     # If we do an equi-join of these two data frames, we will get the matches that were in the top-K
-#     merged_df = pd.merge(candidate_set_df, golden_df, on=['ltable_id', 'rtable_id'])
-
-#     left_num_tuples = len(left_df)
-#     right_num_tuples = len(right_df)
-#     statistics_dict = {
-#         "left_num_tuples": left_num_tuples,
-#         "right_num_tuples": right_num_tuples,
-#         "recall": len(merged_df) / len(golden_df),
-#         "cssr": len(candidate_set_df) / (left_num_tuples * right_num_tuples)
-#         }
-
-#     return statistics_dict
-
 def compute_blocking_statistics(table_names,candidate_set_df, golden_df,left_df, right_df,threshold=None):
     #Now we have two data frames with two columns ltable_id and rtable_id
     # If we do an equi-join of these two data frames, we will get the matches that were in the top-K

@@ -1,4 +1,5 @@
 FASTTEXT_EMBEDDIG_PATH = "embedding/wiki.en.bin"
+GOLDEN_SET_PATH = "nyc_output/aurum_output.txt"
 #Dimension of the word embeddings.
 EMB_DIMENSION_SIZE = 300
 #Embedding size of AutoEncoder embedding
@@ -10,3 +11,4 @@ LEARNING_RATE = 1e-3
 CTT_BINARY_THRESHOLD=0.9
 CTT_EMBEDDING_THRESHOLD=0.9
 SIF_EMBEDDING_THRESHOLD=0.3
+NUM_SYNTH_TUPLES=100

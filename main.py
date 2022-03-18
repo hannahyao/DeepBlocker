@@ -12,6 +12,10 @@ from configurations import *
 import pickle
 
 def ctt_train_score_with_pred(folder_root, golden_set,left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model):
+    """
+    Inputs table names, model type, ground truth labels.
+    Outputs evaluation statistics with binary classifier, mainly for CTT
+    """
     folder_root = Path(folder_root)
     left_table_name_csv = left_table_fname+'.csv'
     right_table_name_csv = right_table_fname+'.csv'
@@ -19,7 +23,7 @@ def ctt_train_score_with_pred(folder_root, golden_set,left_table_fname, right_ta
     right_df = pd.read_csv(folder_root / right_table_name_csv)
 
     db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
-    candidate_set_df,predictions = db.block_datasets(left_df, right_df, cols_to_block,True)
+    candidate_set_df,predictions = db.driver(left_df, right_df, cols_to_block,True)
     predictions = pd.DataFrame(predictions,columns=['ltable_id','rtable_id','value'])
     # print(predictions)
     # predictions = predictions[predictions.prediction > 0.1]
@@ -31,7 +35,11 @@ def ctt_train_score_with_pred(folder_root, golden_set,left_table_fname, right_ta
     
     return statistics_dict,statistics_dict_binary
 
-def do_blocking(folder_root, golden_set, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model,threshold):
+def train_score(folder_root, golden_set, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, vector_pairing_model,threshold):
+    """
+    Inputs table names, model type, ground truth labels.
+    Outputs evaluation statistics for any supplied model
+    """
     folder_root = Path(folder_root)
     left_table_name_csv = left_table_fname+'.csv'
     right_table_name_csv = right_table_fname+'.csv'
@@ -39,7 +47,7 @@ def do_blocking(folder_root, golden_set, left_table_fname, right_table_fname, co
     right_df = pd.read_csv(folder_root / right_table_name_csv)
 
     db = DeepBlocker(tuple_embedding_model, vector_pairing_model)
-    candidate_set_df = db.block_datasets(left_df, right_df, cols_to_block,False)
+    candidate_set_df = db.driver(left_df, right_df, cols_to_block,False)
     # golden_df = pd.read_csv(Path(folder_root) /  "matches.csv")
 
     golden_df = filter_golden_set(golden_set,left_table_fname, right_table_fname)
@@ -48,6 +56,9 @@ def do_blocking(folder_root, golden_set, left_table_fname, right_table_fname, co
     return statistics_dict
 
 def get_golden_set(left_table_fname, right_table_fname):
+    """
+    Queries golden set from one table (used when not looping/scoring)
+    """
     output_file = 'nyc_output/'+ left_table_fname + '-output.txt'
     with open(output_file) as f:
         lines = f.readlines()
@@ -66,7 +77,11 @@ def get_golden_set(left_table_fname, right_table_fname):
     return golden_df
 
 def get_golden_set_full():
-    output_file = 'nyc_output/'+ 'aurum_output.txt'
+    """
+    Gets full ground truth golden set
+    """
+    # output_file = 'nyc_output/'+ 'aurum_output.txt'
+    output_file = GOLDEN_SET_PATH
     with open(output_file) as f:
         lines = f.readlines()
     line_df = pd.DataFrame(lines,columns=['full'])
@@ -79,6 +94,7 @@ def get_golden_set_full():
     line_df['left_table'] = line_df['ltable_id'].str.split('.').str[0]
     line_df['right_table'] = line_df['rtable_id'].str.split('.').str[0]
     line_df = line_df.drop_duplicates()
+    line_df = line_df[:1000]
     tables = line_df[['left_table','right_table']].drop_duplicates()
     records = tables.to_records(index=False)
     table_pairs = list(records)
@@ -86,6 +102,7 @@ def get_golden_set_full():
     
 
 def filter_golden_set(golden_set,left_table_fname, right_table_fname):
+    
     golden_df = golden_set[golden_set['ltable_id'].str.contains(left_table_fname)]
     golden_df = golden_set[golden_set['rtable_id'].str.contains(right_table_fname)]
     golden_df.ltable_id = golden_df.ltable_id.str.strip()
@@ -96,32 +113,33 @@ def filter_golden_set(golden_set,left_table_fname, right_table_fname):
     return golden_df
 
 if __name__ == "__main__":
-    # folder_root = "data/Structured/Amazon-Google"
-    # left_table_fname, right_table_fname = "tableA.csv", "tableB.csv"
-    # cols_to_block = ["title", "manufacturer", "price"]
+    """
+    Trains and computes statistics given a ground truth golden dataset in a loop
+    """
+
     golden_set, table_pairs = get_golden_set_full()
     output = []
     for pair in table_pairs:
-            
+
         folder_root = "nyc_cleaned"
         left_table_fname, right_table_fname = pair[0],pair[1]
         cols_to_block = [None]
         # print("using AutoEncoder embedding")
         # tuple_embedding_model = AutoEncoderTupleEmbedding()
         # topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
-        # statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
+        # statistics_dict = train_score(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
         # print(statistics_dict)
 
         print("using SIF embedding")
         tuple_embedding_model = SIFEmbedding()
         topK_vector_pairing_model = ExactTopKVectorPairing(K=1)
-        statistics_dict = do_blocking(folder_root, golden_set, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model,SIF_EMBEDDING_THRESHOLD)
+        statistics_dict = train_score(folder_root, golden_set, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model,SIF_EMBEDDING_THRESHOLD)
         statistics_dict['mode'] = 'SIF'
         output.append(statistics_dict)
         # print(statistics_dict)
 
         print("using CTT embedding")
-        tuple_embedding_model = CTTTupleEmbedding(synth_tuples_per_tuple=100)
+        tuple_embedding_model = CTTTupleEmbedding(synth_tuples_per_tuple=NUM_SYNTH_TUPLES)
         topK_vector_pairing_model = ExactTopKVectorPairing(K=1)
         statistics_dict , statistics_dict_binary= ctt_train_score_with_pred(folder_root, golden_set, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
         
@@ -130,12 +148,14 @@ if __name__ == "__main__":
         statistics_dict_binary['mode'] = 'CTT_classifier'
         output.append(statistics_dict_binary)
 
-        # print(output)
         # print("using Hybrid embedding")
         # tuple_embedding_model = CTTTupleEmbedding()
         # topK_vector_pairing_model = ExactTopKVectorPairing(K=50)
-        # statistics_dict = do_blocking(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
-        # print(statistics_dict)
-    # print(output)
+        # statistics_dict = train_score(folder_root, left_table_fname, right_table_fname, cols_to_block, tuple_embedding_model, topK_vector_pairing_model)
+
+        print("output_length", str(len(output)))
         with open('output_stats.pkl', 'wb') as f:
             pickle.dump(output, f)
+
+            
+ 

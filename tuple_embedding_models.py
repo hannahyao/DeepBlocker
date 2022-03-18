@@ -238,7 +238,7 @@ def generate_synthetic_training_data(list_of_tuples, synth_tuples_per_tuple,
 
 class CTTTupleEmbedding(ABCTupleEmbedding):
     def __init__(self, hidden_dimensions=(2*AE_EMB_DIMENSION_SIZE, AE_EMB_DIMENSION_SIZE),
-            synth_tuples_per_tuple=10, pos_to_neg_ratio=1, max_perturbation=0.4):
+            synth_tuples_per_tuple=NUM_SYNTH_TUPLES, pos_to_neg_ratio=1, max_perturbation=0.4):
         super().__init__()
         self.input_dimension = EMB_DIMENSION_SIZE
         self.hidden_dimensions = hidden_dimensions
@@ -274,12 +274,6 @@ class CTTTupleEmbedding(ABCTupleEmbedding):
     def get_tuple_embedding(self, list_of_tuples):
         embedding_matrix = torch.tensor(self.sif_embedding_model.get_tuple_embedding(list_of_tuples)).float()
         return self.ctt_model.get_tuple_embedding(embedding_matrix)
-
-    # def get_tuple_embedding(self, list_of_tuples):
-    #     embedding_matrix = torch.tensor(self.sif_embedding_model.get_tuple_embedding(list_of_tuples)).float()
-    #     return embedding_matrix       
-    # def run_model(self):
-    #     return lambda u, v: self.ctt_model(u,v)   
 
     def get_prediction(self, t1,t2):
         embedding_matrix_1 = torch.tensor(self.sif_embedding_model.get_tuple_embedding(t1['_merged_text'])).float()
